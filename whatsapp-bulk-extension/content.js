@@ -73,16 +73,17 @@ async function doSend({ messageBefore, messageAfter, images, attachments }) {
       }
 
       if (hasImages) {
-        for (const img of images) {
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
           const bytes = Uint8Array.from(atob(img.data), c => c.charCodeAt(0));
           const file = new File([bytes], img.name || 'imagen.jpg', { type: img.mime || 'image/jpeg' });
 
           const attached = await tryAttachImage(file);
           if (!attached) return { success: false, error: 'No se pudo adjuntar imagen: ' + img.name };
 
-          await sleep(2000);
+          await sleep(2500);
 
-          const isLast = img === images[images.length - 1] && (!hasAttachments || !hasAfter);
+          const isLast = i === images.length - 1 && (!hasAttachments || !hasAfter);
           if (hasAfter && isLast) {
             const captionBox = await waitForAnyElement([
               '[data-testid="media-caption-input-container"] [contenteditable="true"]',
@@ -102,26 +103,28 @@ async function doSend({ messageBefore, messageAfter, images, attachments }) {
           }
 
           await sleep(500);
-          const sent = await clickSend();
+          let sent = await clickSend();
           if (!sent) {
             const active = document.activeElement;
             if (active) active.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
           }
-          await sleep(1500);
+          await sleep(2000);
         }
       }
 
       if (hasAttachments) {
-        for (const att of attachments) {
+        for (let i = 0; i < attachments.length; i++) {
+          const att = attachments[i];
           const bytes = Uint8Array.from(atob(att.data), c => c.charCodeAt(0));
           const file = new File([bytes], att.name || 'archivo', { type: att.mime || 'application/octet-stream' });
 
           const attached = await tryAttachFile(file);
           if (!attached) return { success: false, error: 'No se pudo adjuntar archivo: ' + att.name };
 
-          await sleep(2000);
+          // Esperar más tiempo para documentos
+          await sleep(3000);
 
-          const isLast = att === attachments[attachments.length - 1] && !hasAfter;
+          const isLast = i === attachments.length - 1 && !hasAfter;
           if (hasAfter && isLast) {
             const captionBox = await waitForAnyElement([
               '[data-testid="media-caption-input-container"] [contenteditable="true"]',
@@ -138,13 +141,16 @@ async function doSend({ messageBefore, messageAfter, images, attachments }) {
             }
           }
 
+          // Enviar - intentar múltiples veces si es necesario
           await sleep(500);
-          const sent = await clickSend();
+          let sent = await clickSend();
           if (!sent) {
             const active = document.activeElement;
             if (active) active.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
           }
-          await sleep(1500);
+          
+          // Esperar a que aparezca el mensaje enviado
+          await sleep(2000);
         }
       }
 
@@ -168,10 +174,61 @@ async function tryAttachImage(file) {
 }
 
 async function tryAttachFile(file) {
-  if (await dropOnChat(file)) return true;
-  await sleep(500);
-  if (await clickAttachAndInject(file, false)) return true;
-  return false;
+  // Para documentos, intentar click directo en el botón de adjuntar
+  try {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await sleep(500);
+
+    const attachBtn = await waitForAnyElement([
+      '[data-testid="attach-btn"]',
+      'button[aria-label*="Adjuntar"]',
+      'button[aria-label*="Attach"]',
+      'span[data-icon="plus"]',
+      '[data-icon="plus"]',
+    ], 4000);
+
+    if (!attachBtn) return false;
+    attachBtn.click();
+    await sleep(1000);
+
+    // Buscar menú de opciones (documento, galería, etc.)
+    const menuItem = await waitForAnyElement([
+      'li[data-testid="attach-item-document"]',
+      'li[aria-label*="Documento"]',
+      'li[aria-label*="Document"]',
+      '[data-testid="attach-menu"] li:nth-child(2)',
+    ], 3000);
+
+    if (menuItem) {
+      menuItem.click();
+      await sleep(800);
+    }
+
+    const allInputs = Array.from(document.querySelectorAll('input[type="file"]'));
+    // Para documentos, buscar input que acepte archivos
+    let target = allInputs.find(i => !(i.accept || '').includes('image'));
+    if (!target && allInputs.length > 0) target = allInputs[0];
+    if (!target) return false;
+
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    try {
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
+      descriptor.set.call(target, dt.files);
+    } catch {
+      Object.defineProperty(target, 'files', { value: dt.files, configurable: true, writable: true });
+    }
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+    target.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    
+    // Esperar a que aparezca el modal de confirmación
+    await sleep(2000);
+    const modal = document.querySelector('[data-testid="media-confirmation-window"], [data-testid="media-editor"]');
+    return !!modal;
+  } catch (err) {
+    console.error('[WA Bulk] tryAttachFile:', err.message);
+    return false;
+  }
 }
 
 async function dropOnChat(file) {
