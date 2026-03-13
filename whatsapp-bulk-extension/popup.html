@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WhatsApp Bulk Sender</title>
+  <title>WhatsApp Bulk Sender - Plantillas</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,12 +25,11 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
-      width: 400px;
-      min-height: 680px;
+      width: 420px;
+      min-height: 720px;
       overflow-x: hidden;
     }
 
-    /* Header */
     .header {
       background: linear-gradient(135deg, var(--yellow-dark) 0%, var(--yellow) 100%);
       padding: 18px 20px 16px;
@@ -46,14 +45,6 @@
       top: -30px; right: -30px;
       width: 100px; height: 100px;
       background: rgba(255,255,255,0.08);
-      border-radius: 50%;
-    }
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: -40px; right: 40px;
-      width: 80px; height: 80px;
-      background: rgba(255,255,255,0.05);
       border-radius: 50%;
     }
     .header-icon {
@@ -77,7 +68,6 @@
       margin-top: 1px;
     }
 
-    /* Status bar */
     .status-bar {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -101,7 +91,6 @@
     }
     .status-text { color: var(--muted); font-weight: 500; }
 
-    /* Main content */
     .content {
       padding: 16px 20px;
       display: flex;
@@ -109,7 +98,6 @@
       gap: 14px;
     }
 
-    /* Section */
     .section-label {
       font-size: 10px;
       font-weight: 700;
@@ -117,12 +105,14 @@
       letter-spacing: 1px;
       color: var(--yellow);
       margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* Phone input area */
     .input-group { display: flex; flex-direction: column; }
     
-    textarea, input[type="text"] {
+    textarea, input[type="text"], select {
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 10px;
@@ -135,17 +125,17 @@
       transition: border-color 0.2s;
       line-height: 1.5;
     }
-    textarea:focus, input[type="text"]:focus {
+    textarea:focus, input[type="text"]:focus, select:focus {
       border-color: var(--yellow);
     }
     textarea::placeholder, input::placeholder {
       color: var(--muted);
     }
+    select { cursor: pointer; }
 
     #phones { height: 72px; }
-    #message { height: 90px; }
+    #messageBefore, #messageAfter { height: 70px; }
 
-    /* Phone counter badge */
     .input-header {
       display: flex;
       justify-content: space-between;
@@ -161,7 +151,6 @@
       border-radius: 20px;
     }
 
-    /* Import buttons */
     .import-row {
       display: flex;
       gap: 6px;
@@ -187,44 +176,40 @@
     .btn-import:hover {
       border-color: var(--yellow);
       color: var(--yellow);
-      background: rgba(0,168,132,0.08);
+      background: rgba(245,158,11,0.1);
     }
     .btn-import svg { width: 13px; height: 13px; flex-shrink: 0; }
 
-    /* Image upload */
-    .image-upload-area {
+    .upload-area {
       background: var(--surface);
       border: 1.5px dashed var(--border);
       border-radius: 10px;
-      padding: 14px;
+      padding: 12px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
       position: relative;
-      overflow: hidden;
     }
-    .image-upload-area:hover {
+    .upload-area:hover {
       border-color: var(--yellow);
-      background: rgba(0,168,132,0.05);
+      background: rgba(245,158,11,0.05);
     }
-    .image-upload-area.has-image {
+    .upload-area.has-files {
       border-style: solid;
       border-color: var(--yellow);
-      padding: 8px;
+      text-align: left;
     }
-    .image-upload-area input[type="file"] {
+    .upload-area input[type="file"] {
       position: absolute;
       inset: 0;
       opacity: 0;
       cursor: pointer;
-      width: 100%;
-      height: 100%;
     }
     .upload-placeholder {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       pointer-events: none;
     }
     .upload-placeholder svg { color: var(--muted); }
@@ -233,33 +218,57 @@
       color: var(--muted);
       font-weight: 500;
     }
-    .upload-placeholder strong {
-      color: var(--yellow);
-      font-weight: 700;
+    .upload-placeholder strong { color: var(--yellow); font-weight: 700; }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    #imagePreview {
-      display: none;
-      width: 100%;
-      max-height: 80px;
-      object-fit: cover;
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: var(--surface2);
       border-radius: 6px;
+      font-size: 11px;
     }
-    .image-name {
-      font-size: 10px;
-      color: var(--yellow);
-      margin-top: 4px;
-      font-weight: 600;
-      display: none;
+    .file-item img {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .file-item .file-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .file-item .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-item .file-remove {
+      color: #ff6b6b;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 14px;
     }
 
-    /* Divider */
     .divider {
       height: 1px;
       background: var(--border);
       margin: 0 -20px;
     }
 
-    /* Progress */
     .progress-section { display: none; }
     .progress-section.visible { display: block; }
     .progress-header {
@@ -283,14 +292,8 @@
       transition: width 0.4s ease;
       width: 0%;
     }
-    .current-phone {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 5px;
-      font-weight: 500;
-    }
+    .current-phone { font-size: 10px; color: var(--muted); margin-top: 5px; font-weight: 500; }
 
-    /* Log */
     #log {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -307,7 +310,6 @@
     .log-err { color: #ff6b6b; }
     .log-info { color: var(--muted); }
 
-    /* Send button */
     .btn-send {
       width: 100%;
       background: linear-gradient(135deg, var(--yellow-dark), var(--yellow));
@@ -325,24 +327,59 @@
       gap: 8px;
       transition: all 0.2s;
       letter-spacing: -0.2px;
-      box-shadow: 0 4px 20px rgba(0,168,132,0.3);
+      box-shadow: 0 4px 20px rgba(245,158,11,0.3);
     }
     .btn-send:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 25px rgba(0,168,132,0.4);
+      box-shadow: 0 6px 25px rgba(245,158,11,0.4);
     }
-    .btn-send:active:not(:disabled) { transform: translateY(0); }
-    .btn-send:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .btn-send.sending {
-      background: linear-gradient(135deg, #cc6600, #ff8800);
-      box-shadow: 0 4px 20px rgba(255,136,0,0.3);
-    }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-send.sending { background: linear-gradient(135deg, #cc6600, #ff8800); }
     .btn-send svg { width: 18px; height: 18px; }
 
-    /* Delay config */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--yellow-dark), var(--yellow));
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--yellow); color: var(--yellow); }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid #ff6b6b;
+      border-radius: 6px;
+      color: #ff6b6b;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-row .btn-primary { flex: 1; }
+    .btn-row .btn-secondary { flex: 1; }
+
     .delay-row {
       display: flex;
       align-items: center;
@@ -359,40 +396,15 @@
       text-align: center;
       padding: 6px 8px;
       font-size: 12px;
-      -moz-appearance: textfield;
     }
-    .delay-row input::-webkit-inner-spin-button,
-    .delay-row input::-webkit-outer-spin-button { -webkit-appearance: none; }
-    .delay-note {
-      font-size: 10px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
+    .delay-note { font-size: 10px; color: var(--muted); }
 
-    /* Hidden file input for Excel */
-    #excelInput { display: none; }
+    #excelInput, #contactsInput { display: none; }
 
-    .btn-debug {
-      width: 100%;
-      background: transparent;
-      border: 1px dashed var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 7px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-debug:hover { border-color: var(--yellow); color: var(--yellow); }
-
-    /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* Tabs */
     .tabs {
       display: flex;
       background: var(--surface);
@@ -402,7 +414,7 @@
       flex: 1;
       padding: 12px;
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
@@ -410,14 +422,86 @@
       transition: all 0.2s;
     }
     .tab:hover { color: var(--text); }
-    .tab.active {
-      color: var(--yellow);
-      border-bottom-color: var(--yellow);
-    }
+    .tab.active { color: var(--yellow); border-bottom-color: var(--yellow); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* History stats */
+    .template-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .template-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .template-item:hover { border-color: var(--yellow); }
+    .template-item.selected { border-color: var(--yellow); background: rgba(245,158,11,0.1); }
+    .template-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .template-item-name { font-weight: 700; font-size: 13px; }
+    .template-item-actions { display: flex; gap: 4px; }
+    .template-item-preview {
+      font-size: 10px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .template-item-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 9px;
+      color: var(--muted);
+    }
+    .template-item-meta span { display: flex; align-items: center; gap: 3px; }
+
+    .template-editor {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .template-editor.active { display: flex; }
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .editor-title { font-size: 14px; font-weight: 700; }
+    .editor-close { cursor: pointer; color: var(--muted); font-size: 18px; }
+
+    .variables-help {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .variables-help strong { color: var(--yellow); }
+    .variable-tag {
+      display: inline-block;
+      background: var(--yellow-dark);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      margin: 2px;
+      cursor: pointer;
+    }
+
     .history-stats {
       display: flex;
       gap: 8px;
@@ -434,6 +518,29 @@
     .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; }
     .stat-box.success .stat-num { color: var(--accent); }
     .stat-box.error .stat-num { color: #ff6b6b; }
+
+    .contact-info {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 10px;
+    }
+    .contact-info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .contact-info-title { font-weight: 700; font-size: 11px; }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--muted);
+    }
+    .empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: 0.5; }
+    .empty-state p { font-size: 12px; }
   </style>
 </head>
 <body>
@@ -442,7 +549,7 @@
     <div class="header-icon">📲</div>
     <div class="header-text">
       <h1>WhatsApp Bulk Sender</h1>
-      <p>Envío masivo con imagen</p>
+      <p>Con plantillas personalizables</p>
     </div>
   </div>
 
@@ -451,101 +558,158 @@
     <span class="status-text" id="statusText">Verificando WhatsApp Web...</span>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" data-tab="send">✉️ Enviar</div>
+    <div class="tab active" data-tab="templates">📝 Plantillas</div>
+    <div class="tab" data-tab="send">✉️ Enviar</div>
     <div class="tab" data-tab="history">📋 Historial</div>
   </div>
 
-  <!-- Tab: Enviar -->
-  <div class="tab-content active" id="tabSend">
+  <div class="tab-content active" id="tabTemplates">
     <div class="content">
-
-    <!-- Teléfonos -->
-    <div class="input-group">
-      <div class="input-header">
-        <div class="section-label">📞 Números de teléfono</div>
-        <span class="count-badge" id="phoneCount">0 números</span>
-      </div>
-      <textarea id="phones" placeholder="Ej: +5491112345678, +5491187654321&#10;Separá por comas, punto y coma o nueva línea&#10;Incluir código de país"></textarea>
-      <div class="import-row">
-        <button class="btn-import" id="btnPaste">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Pegar portapapeles
-        </button>
-        <button class="btn-import" id="btnExcel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
-          Importar Excel/CSV
-        </button>
-        <input type="file" id="excelInput" accept=".csv,.xlsx,.xls,.txt">
-      </div>
-    </div>
-
-    <!-- Mensaje antes de imagen -->
-    <div class="input-group">
-      <div class="section-label">💬 Mensaje antes de imagen (opcional)</div>
-      <textarea id="messageBefore" placeholder="Se envía antes de la imagen..."></textarea>
-    </div>
-
-    <!-- Imagen -->
-    <div class="input-group">
-      <div class="section-label">🖼️ Imagen a enviar (opcional)</div>
-      <div class="image-upload-area" id="imageArea">
-        <input type="file" id="imageInput" accept="image/*">
-        <div class="upload-placeholder" id="uploadPlaceholder">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
-          <span><strong>Clic para subir imagen</strong> <em style="font-weight:400">(opcional)</em></span>
-          <span>JPG, PNG, GIF, WEBP</span>
+      
+      <div id="templateListView">
+        <div class="section-label">Tus plantillas</div>
+        <div class="template-list" id="templateList">
+          <div class="empty-state">
+            <p>No hay plantillas aún</p>
+          </div>
         </div>
-        <img id="imagePreview" alt="preview">
-        <div class="image-name" id="imageName"></div>
+        <button class="btn-primary" id="btnNewTemplate" style="margin-top:12px;width:100%;">
+          + Nueva plantilla
+        </button>
       </div>
-    </div>
 
-    <!-- Mensaje después de imagen -->
-    <div class="input-group">
-      <div class="section-label">💬 Mensaje después de imagen (opcional)</div>
-      <textarea id="messageAfter" placeholder="Se envía después de la imagen..."></textarea>
-    </div>
+      <div class="template-editor" id="templateEditor">
+        <div class="editor-header">
+          <span class="editor-title" id="editorTitle">Nueva plantilla</span>
+          <span class="editor-close" id="editorClose">✕</span>
+        </div>
 
-    <div class="divider"></div>
+        <div class="input-group">
+          <div class="section-label">Nombre de la plantilla</div>
+          <input type="text" id="templateName" placeholder="Ej: Consulta inicial">
+        </div>
 
-    <!-- Config delay -->
-    <div class="delay-row">
-      <label>⏱ Espera entre mensajes:</label>
-      <input type="number" id="delay" value="4" min="2" max="30">
-      <label>seg</label>
-      <span class="delay-note">Mín. 2s recomendado para evitar bloqueos</span>
-    </div>
+        <div class="input-group">
+          <div class="section-label">💬 Mensaje antes</div>
+          <textarea id="messageBefore" placeholder="Hola {{nombre}}, gracias por contactarnos..."></textarea>
+          <div class="variables-help">
+            Variables: <span class="variable-tag" data-var="{{telefono}}">{{telefono}}</span>
+            <span class="variable-tag" data-var="{{nombre}}">{{nombre}}</span>
+            <span class="variable-tag" data-var="{{email}}">{{email}}</span>
+            <span class="variable-tag" data-var="{{empresa}}">{{empresa}}</span>
+          </div>
+        </div>
 
-    <!-- Progreso -->
-    <div class="progress-section" id="progressSection">
-      <div class="progress-header">
-        <span class="progress-label">Enviando mensajes...</span>
-        <span class="progress-count" id="progressCount">0 / 0</span>
+        <div class="input-group">
+          <div class="section-label">🖼️ Imágenes</div>
+          <div class="upload-area" id="imagesArea">
+            <input type="file" id="imagesInput" accept="image/*" multiple>
+            <div class="upload-placeholder" id="imagesPlaceholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+              <span><strong>Clic para subir imágenes</strong></span>
+              <span>JPG, PNG, GIF, WEBP</span>
+            </div>
+            <div class="file-list" id="imagesList" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="section-label">📎 Archivos adjuntos</div>
+          <div class="upload-area" id="attachmentsArea">
+            <input type="file" id="attachmentsInput">
+            <div class="upload-placeholder" id="attachmentsPlaceholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+              <span><strong>Clic para subir archivo</strong></span>
+              <span>PDF, DOC, XLS, etc.</span>
+            </div>
+            <div class="file-list" id="attachmentsList" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="section-label">💬 Mensaje después</div>
+          <textarea id="messageAfter" placeholder="Saludos cordiales..."></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-secondary" id="btnCancelTemplate">Cancelar</button>
+          <button class="btn-primary" id="btnSaveTemplate">Guardar plantilla</button>
+        </div>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <div class="current-phone" id="currentPhone"></div>
-    </div>
-
-    <!-- Log -->
-    <div id="log"></div>
-
-    <!-- Debug -->
-    <button class="btn-debug" id="btnDebug">🔍 Diagnosticar WhatsApp Web</button>
-
-    <!-- Botón enviar -->
-    <button class="btn-send" id="btnSend">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
-      <span id="btnText">Enviar a todos</span>
-    </button>
 
     </div>
   </div>
 
-  <!-- Tab: Historial -->
+  <div class="tab-content" id="tabSend">
+    <div class="content">
+
+      <div class="input-group">
+        <div class="section-label">📝 Seleccionar plantilla</div>
+        <select id="templateSelect">
+          <option value="">-- Elegir plantilla --</option>
+        </select>
+        <div id="templatePreview" class="contact-info" style="margin-top:8px;display:none;">
+          <div class="contact-info-header">
+            <span class="contact-info-title">Vista previa</span>
+          </div>
+          <div id="templatePreviewContent"></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-header">
+          <div class="section-label">👥 Contactos</div>
+          <span class="count-badge" id="contactCount">0 contactos</span>
+        </div>
+        <textarea id="phones" placeholder="Pega datos de Excel/CSV aquí&#10;O importa un archivo"></textarea>
+        <div class="import-row">
+          <button class="btn-import" id="btnImportContacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Importar
+          </button>
+          <button class="btn-import" id="btnPaste">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Pegar
+          </button>
+          <input type="file" id="contactsInput" accept=".csv,.xlsx,.xls,.txt">
+        </div>
+      </div>
+
+      <div class="variables-help" id="variablesInfo" style="display:none;">
+        <strong>Variables detectadas:</strong> <span id="detectedVariables"></span>
+        <br><em style="color:var(--muted)">Usa estas variables en los mensajes de tu plantilla</em>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="delay-row">
+        <label>⏱ Espera entre mensajes:</label>
+        <input type="number" id="delay" value="4" min="2" max="30">
+        <label>seg</label>
+      </div>
+
+      <div class="progress-section" id="progressSection">
+        <div class="progress-header">
+          <span class="progress-label">Enviando mensajes...</span>
+          <span class="progress-count" id="progressCount">0 / 0</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="current-phone" id="currentPhone"></div>
+      </div>
+
+      <div id="log"></div>
+
+      <button class="btn-send" id="btnSend">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+        <span id="btnText">Enviar a todos</span>
+      </button>
+
+    </div>
+  </div>
+
   <div class="tab-content" id="tabHistory">
     <div class="content">
       <div class="history-stats">
@@ -563,11 +727,13 @@
         </div>
       </div>
       <div class="section-label">📋 Registros</div>
-      <div id="historyList" style="max-height:320px;overflow-y:auto;background:var(--surface);border-radius:8px;padding:8px;font-size:10px;"></div>
-      <button class="btn-send" id="btnExportCsv" style="margin-top:12px;">
+      <div id="historyList" style="max-height:280px;overflow-y:auto;background:var(--surface);border-radius:8px;padding:8px;font-size:10px;"></div>
+      <button class="btn-primary" id="btnExportCsv" style="margin-top:12px;width:100%;">
         📥 Exportar CSV
       </button>
-      <button class="btn-debug" id="btnClearHistory" style="margin-top:8px;">🗑️ Limpiar historial</button>
+      <button class="btn-secondary" id="btnClearHistory" style="margin-top:8px;width:100%;">
+        🗑️ Limpiar historial
+      </button>
     </div>
   </div>
 

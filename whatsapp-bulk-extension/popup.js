@@ -5,7 +5,6 @@ let stopRequested = false;
 let templates = [];
 let editingTemplateId = null;
 
-// ─── Elementos del DOM ─────────────────────────────────────────
 const phonesEl = document.getElementById('phones');
 const delayInput = document.getElementById('delay');
 const btnSend = document.getElementById('btnSend');
@@ -18,7 +17,6 @@ const templateSelect = document.getElementById('templateSelect');
 const templatePreview = document.getElementById('templatePreview');
 const templatePreviewContent = document.getElementById('templatePreviewContent');
 
-// ─── Check WhatsApp tab ───────────────────────────────────────
 async function checkWhatsAppTab() {
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
@@ -38,7 +36,6 @@ async function checkWhatsAppTab() {
 }
 checkWhatsAppTab();
 
-// ─── Plantillas ───────────────────────────────────────────────
 const TEMPLATES_KEY = 'messageTemplates';
 
 function generateId() {
@@ -79,8 +76,8 @@ async function renderTemplateList() {
       </div>
       <div class="template-item-preview">${escapeHtml(t.messageBefore || 'Sin mensaje antes')}</div>
       <div class="template-item-meta">
-        ${t.images?.length ? `<span>🖼️ ${t.images.length} imagen${t.images.length > 1 ? 'es' : ''}</span>` : ''}
-        ${t.attachments?.length ? `<span>📎 ${t.attachments.length} archivo${t.attachments.length > 1 ? 's' : ''}</span>` : ''}
+        ${t.images?.length ? `<span>🖼️ ${t.images.length}</span>` : ''}
+        ${t.attachments?.length ? `<span>📎 ${t.attachments.length}</span>` : ''}
         ${t.messageAfter ? `<span>💬</span>` : ''}
       </div>
     </div>
@@ -161,7 +158,6 @@ async function deleteTemplate(id) {
   renderTemplateList();
 }
 
-// ─── File handling ─────────────────────────────────────────────
 window.currentImages = [];
 window.currentAttachments = [];
 
@@ -235,7 +231,6 @@ function removeFile(type, index) {
   }
 }
 
-// ─── Contactos - Soporta números simples y CSV ─────────────────────
 const DEFAULT_COUNTRY_CODE = '+54';
 
 function formatPhone(phone) {
@@ -251,7 +246,6 @@ function formatPhone(phone) {
   return p;
 }
 
-// Detectar si es CSV (tiene tabs, comas o punto y coma con múltiples columnas)
 function isCSV(text) {
   const firstLine = text.split('\n')[0];
   if (!firstLine) return false;
@@ -266,7 +260,6 @@ function isCSV(text) {
 function parseContacts(text) {
   if (!text.trim()) return { contacts: [], headers: [] };
   
-  // Si no es CSV, parsear como números simples
   if (!isCSV(text)) {
     const phones = text.split(/[,;\n]+/).map(p => {
       const phone = formatPhone(p);
@@ -276,7 +269,6 @@ function parseContacts(text) {
     return { contacts: phones, headers: ['telefono'] };
   }
   
-  // Es CSV
   const lines = text.split('\n').filter(l => l.trim());
   if (lines.length === 0) return { contacts: [], headers: [] };
 
@@ -303,7 +295,7 @@ function parseContacts(text) {
 }
 
 function detectVariables(headers) {
-  const known = ['telefono', 'phone', 'celular', 'cel', 'nombre', 'name', 'email', 'correo', 'empresa', 'company', 'direccion', 'address'];
+  const known = ['telefono', 'phone', 'celular', 'cel', 'nombre', 'name', 'email', 'correo', 'empresa', 'company'];
   return headers.filter(h => known.includes(h));
 }
 
@@ -316,7 +308,6 @@ function replaceVariables(text, contact) {
   });
 }
 
-// ─── Envío de mensajes ─────────────────────────────────────────
 function logMsg(type, msg) {
   logEl.classList.add('visible');
   const span = document.createElement('div');
@@ -333,9 +324,7 @@ function updateProgress(current, total, phone) {
   currentPhoneEl.textContent = phone;
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 function sendMessage(tabId, payload) {
   return new Promise(resolve => {
@@ -473,7 +462,6 @@ btnSend.addEventListener('click', async () => {
   logMsg('info', `Completado: ${sent} ok, ${errors} errores`);
 });
 
-// ─── Tabs ─────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -486,7 +474,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ─── Template editor events ───────────────────────────────────
 document.getElementById('btnNewTemplate').addEventListener('click', () => showTemplateEditor());
 document.getElementById('editorClose').addEventListener('click', hideTemplateEditor);
 document.getElementById('btnCancelTemplate').addEventListener('click', hideTemplateEditor);
@@ -534,7 +521,6 @@ document.querySelectorAll('.variable-tag').forEach(tag => {
   });
 });
 
-// ─── Selector de plantilla ─────────────────────────────────────
 templateSelect.addEventListener('change', () => {
   const templateId = templateSelect.value;
   if (!templateId) {
@@ -560,36 +546,26 @@ templateSelect.addEventListener('change', () => {
   templatePreview.style.display = 'block';
 });
 
-// ─── Contactos input ───────────────────────────────────────────
 phonesEl.addEventListener('input', () => {
   const { contacts, headers } = parseContacts(phonesEl.value);
   const count = contacts.filter(c => c._telefono).length;
-  const countEl = document.getElementById('contactCount');
-  if (countEl) {
-    countEl.textContent = `${count} contacto${count !== 1 ? 's' : ''}`;
-  } else {
-    // Versión vieja compatibility
-    const phoneCountEl = document.getElementById('phoneCount');
-    if (phoneCountEl) phoneCountEl.textContent = `${count} número${count !== 1 ? 's' : ''}`;
-  }
+  document.getElementById('contactCount').textContent = `${count} contacto${count !== 1 ? 's' : ''}`;
 
   const vars = detectVariables(headers);
   const info = document.getElementById('variablesInfo');
-  if (info) {
-    if (vars.length > 0) {
-      document.getElementById('detectedVariables').innerHTML = vars.map(v => `<span class="variable-tag">{{${v}}}</span>`).join('');
-      info.style.display = 'block';
-    } else {
-      info.style.display = 'none';
-    }
+  if (vars.length > 0) {
+    document.getElementById('detectedVariables').innerHTML = vars.map(v => `<span class="variable-tag">{{${v}}}</span>`).join('');
+    info.style.display = 'block';
+  } else {
+    info.style.display = 'none';
   }
 });
 
-document.getElementById('btnImportContacts')?.addEventListener('click', () => {
+document.getElementById('btnImportContacts').addEventListener('click', () => {
   document.getElementById('contactsInput').click();
 });
 
-document.getElementById('contactsInput')?.addEventListener('change', async e => {
+document.getElementById('contactsInput').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
   const text = await file.text();
@@ -597,7 +573,7 @@ document.getElementById('contactsInput')?.addEventListener('change', async e => 
   phonesEl.dispatchEvent(new Event('input'));
 });
 
-document.getElementById('btnPaste')?.addEventListener('click', async () => {
+document.getElementById('btnPaste').addEventListener('click', async () => {
   try {
     const text = await navigator.clipboard.readText();
     phonesEl.value = text;
@@ -607,7 +583,6 @@ document.getElementById('btnPaste')?.addEventListener('click', async () => {
   }
 });
 
-// ─── Historial ───────────────────────────────────────────────
 const HISTORY_KEY = 'messageHistory';
 
 function getHistory() {
@@ -664,7 +639,7 @@ async function loadHistory() {
   `).join('');
 }
 
-document.getElementById('btnExportCsv')?.addEventListener('click', async () => {
+document.getElementById('btnExportCsv').addEventListener('click', async () => {
   const history = await getHistory();
   const headers = ['Fecha', 'Teléfono', 'Plantilla', 'Imagen', 'Archivo', 'Estado'];
   const rows = history.map(r => [
@@ -686,14 +661,13 @@ document.getElementById('btnExportCsv')?.addEventListener('click', async () => {
   URL.revokeObjectURL(url);
 });
 
-document.getElementById('btnClearHistory')?.addEventListener('click', () => {
+document.getElementById('btnClearHistory').addEventListener('click', () => {
   if (confirm('¿Borrar todo el historial?')) {
     chrome.storage.local.set({ [HISTORY_KEY]: [] });
     loadHistory();
   }
 });
 
-// ─── Utils ───────────────────────────────────────────────────
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
@@ -701,5 +675,4 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// ─── Init ─────────────────────────────────────────────────────
 renderTemplateList();

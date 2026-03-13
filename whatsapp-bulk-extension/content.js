@@ -1,7 +1,7 @@
-// content.js v1.4 — Enfoque simplificado y robusto
+// content.js v2.0 - WhatsApp Bulk Sender con Plantillas
 if (!window.__waBulkSenderLoaded) {
   window.__waBulkSenderLoaded = true;
-  console.log('[WA Bulk Sender] v1.4 loaded');
+  console.log('[WA Bulk Sender] v2.0 loaded');
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -13,7 +13,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       'button[aria-label*="Adjuntar"]',
       'button[aria-label*="Attach"]',
       'span[data-icon="plus"]',
-      '[data-icon="plus"]',
     ];
     let attachSelector = null;
     for (const s of attachSelectors) {
@@ -34,9 +33,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-async function doSend({ messageBefore, messageAfter, imageBase64, imageMimeType, imageFileName }) {
+async function doSend({ messageBefore, messageAfter, images, attachments }) {
   try {
-    // 1. Esperar input del chat
     const inputBox = await waitForElement(
       'footer [contenteditable="true"], [data-tab="10"][contenteditable="true"]',
       10000
@@ -46,37 +44,23 @@ async function doSend({ messageBefore, messageAfter, imageBase64, imageMimeType,
 
     const hasBefore = messageBefore && messageBefore.trim();
     const hasAfter = messageAfter && messageAfter.trim();
-    const hasImage = !!imageBase64;
+    const hasImages = images && images.length > 0;
+    const hasAttachments = attachments && attachments.length > 0;
 
-    // Caso 1: Solo mensaje antes (sin imagen)
-    if (hasBefore && !hasImage && !hasAfter) {
+    if (!hasImages && !hasAttachments && (hasBefore || hasAfter)) {
+      const text = hasBefore ? messageBefore : messageAfter;
       inputBox.click();
       inputBox.focus();
       await sleep(300);
       document.execCommand('selectAll', false, null);
-      document.execCommand('insertText', false, messageBefore);
+      document.execCommand('insertText', false, text);
       await sleep(300);
       await clickSend();
       await sleep(1200);
       return { success: true };
     }
 
-    // Caso 2: Solo mensaje después (sin imagen) - tratado como mensaje normal
-    if (hasAfter && !hasImage && !hasBefore) {
-      inputBox.click();
-      inputBox.focus();
-      await sleep(300);
-      document.execCommand('selectAll', false, null);
-      document.execCommand('insertText', false, messageAfter);
-      await sleep(300);
-      await clickSend();
-      await sleep(1200);
-      return { success: true };
-    }
-
-    // Caso 3: Con imagen - enviar mensaje antes (si existe), luego imagen con caption
-    if (hasImage) {
-      // 3a. Enviar mensaje antes de la imagen si existe
+    if (hasImages || hasAttachments) {
       if (hasBefore) {
         inputBox.click();
         inputBox.focus();
@@ -88,72 +72,108 @@ async function doSend({ messageBefore, messageAfter, imageBase64, imageMimeType,
         await sleep(1500);
       }
 
-      // 3b. Adjuntar imagen
-      const bytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
-      const file = new File([bytes], imageFileName || 'imagen.jpg', { type: imageMimeType || 'image/jpeg' });
+      if (hasImages) {
+        for (const img of images) {
+          const bytes = Uint8Array.from(atob(img.data), c => c.charCodeAt(0));
+          const file = new File([bytes], img.name || 'imagen.jpg', { type: img.mime || 'image/jpeg' });
 
-      const attached = await tryAttachImage(file);
-      if (!attached) return { success: false, error: 'No se pudo adjuntar la imagen' };
+          const attached = await tryAttachImage(file);
+          if (!attached) return { success: false, error: 'No se pudo adjuntar imagen: ' + img.name };
 
-      // 3c. Esperar que el modal de envío aparezca
-      await sleep(2000);
+          await sleep(2000);
 
-      // 3d. Caption después de la imagen
-      if (hasAfter) {
-        const captionBox = await waitForAnyElement([
-          '[data-testid="media-caption-input-container"] [contenteditable="true"]',
-          'div[contenteditable="true"][class*="caption"]',
-          'div[contenteditable="true"][data-tab="10"]',
-          'div[contenteditable="true"][aria-placeholder]',
-          'span[contenteditable="true"]',
-        ], 3000);
+          const isLast = img === images[images.length - 1] && (!hasAttachments || !hasAfter);
+          if (hasAfter && isLast) {
+            const captionBox = await waitForAnyElement([
+              '[data-testid="media-caption-input-container"] [contenteditable="true"]',
+              'div[contenteditable="true"][class*="caption"]',
+              'div[contenteditable="true"][data-tab="10"]',
+              'div[contenteditable="true"][aria-placeholder]',
+            ], 3000);
 
-        if (captionBox) {
-          captionBox.click();
-          captionBox.focus();
-          await sleep(300);
-          document.execCommand('selectAll', false, null);
-          document.execCommand('insertText', false, messageAfter);
-          await sleep(400);
+            if (captionBox) {
+              captionBox.click();
+              captionBox.focus();
+              await sleep(300);
+              document.execCommand('selectAll', false, null);
+              document.execCommand('insertText', false, messageAfter);
+              await sleep(400);
+            }
+          }
+
+          await sleep(500);
+          const sent = await clickSend();
+          if (!sent) {
+            const active = document.activeElement;
+            if (active) active.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+          }
+          await sleep(1500);
         }
       }
 
-      // 3e. Enviar
-      await sleep(500);
-      const sent = await clickSend();
-      if (!sent) {
-        const active = document.activeElement;
-        if (active) active.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+      if (hasAttachments) {
+        for (const att of attachments) {
+          const bytes = Uint8Array.from(atob(att.data), c => c.charCodeAt(0));
+          const file = new File([bytes], att.name || 'archivo', { type: att.mime || 'application/octet-stream' });
+
+          const attached = await tryAttachFile(file);
+          if (!attached) return { success: false, error: 'No se pudo adjuntar archivo: ' + att.name };
+
+          await sleep(2000);
+
+          const isLast = att === attachments[attachments.length - 1] && !hasAfter;
+          if (hasAfter && isLast) {
+            const captionBox = await waitForAnyElement([
+              '[data-testid="media-caption-input-container"] [contenteditable="true"]',
+              'div[contenteditable="true"][class*="caption"]',
+            ], 3000);
+
+            if (captionBox) {
+              captionBox.click();
+              captionBox.focus();
+              await sleep(300);
+              document.execCommand('selectAll', false, null);
+              document.execCommand('insertText', false, messageAfter);
+              await sleep(400);
+            }
+          }
+
+          await sleep(500);
+          const sent = await clickSend();
+          if (!sent) {
+            const active = document.activeElement;
+            if (active) active.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+          }
+          await sleep(1500);
+        }
       }
-      await sleep(1200);
+
       return { success: true };
     }
 
-    // Si llegó aquí sin imagen ni mensajes
-    return { success: false, error: 'Sin imagen ni mensaje' };
+    return { success: false, error: 'Sin contenido para enviar' };
 
   } catch (err) {
     return { success: false, error: err.message };
   }
 }
 
-// ─── Intentar adjuntar con múltiples métodos ─────────────────
 async function tryAttachImage(file) {
-  // Método 1: Drag & drop sobre el área del chat
   if (await dropOnChat(file)) return true;
   await sleep(500);
-
-  // Método 2: Pegar desde clipboard simulado
   if (await pasteImage(file)) return true;
   await sleep(500);
-
-  // Método 3: Click en adjuntar + input file
-  if (await clickAttachAndInject(file)) return true;
-
+  if (await clickAttachAndInject(file, true)) return true;
   return false;
 }
 
-// Método 1: Drop
+async function tryAttachFile(file) {
+  if (await dropOnChat(file)) return true;
+  await sleep(500);
+  if (await clickAttachAndInject(file, false)) return true;
+  return false;
+}
+
 async function dropOnChat(file) {
   try {
     const zone = document.querySelector('#main, main, [data-testid="conversation-panel-wrapper"]');
@@ -167,7 +187,6 @@ async function dropOnChat(file) {
     await sleep(100);
     zone.dispatchEvent(new DragEvent('drop', opts));
     await sleep(800);
-    // Verificar si apareció algo (modal, overlay, canvas, img)
     const appeared = document.querySelector(
       '[data-testid="media-confirmation-window"], [data-testid="media-editor"], ' +
       'div[class*="popup-contents"], div[class*="_2Gdnd"], div[class*="media-panel"]'
@@ -176,14 +195,12 @@ async function dropOnChat(file) {
   } catch { return false; }
 }
 
-// Método 2: Pegar imagen via ClipboardEvent
 async function pasteImage(file) {
   try {
     const inputBox = document.querySelector('footer [contenteditable="true"]');
     if (!inputBox) return false;
     inputBox.focus();
     await sleep(200);
-
     const dt = new DataTransfer();
     dt.items.add(file);
     const pasteEvent = new ClipboardEvent('paste', {
@@ -191,7 +208,6 @@ async function pasteImage(file) {
     });
     inputBox.dispatchEvent(pasteEvent);
     await sleep(800);
-
     const appeared = document.querySelector(
       '[data-testid="media-confirmation-window"], [data-testid="media-editor"], ' +
       'div[class*="popup-contents"], div[class*="media-panel"]'
@@ -200,10 +216,8 @@ async function pasteImage(file) {
   } catch { return false; }
 }
 
-// Método 3: Click adjuntar + inject
-async function clickAttachAndInject(file) {
+async function clickAttachAndInject(file, isImage) {
   try {
-    // Cerrar cualquier menú abierto primero
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
     await sleep(300);
 
@@ -220,17 +234,20 @@ async function clickAttachAndInject(file) {
     attachBtn.click();
     await sleep(800);
 
-    // Buscar TODOS los inputs file visibles o no
     const allInputs = Array.from(document.querySelectorAll('input[type="file"]'));
-    console.log('[WA Bulk] inputs encontrados:', allInputs.length, allInputs.map(i => i.accept));
+    let target = null;
 
-    // Preferir el que acepta imágenes
-    let target = allInputs.find(i => (i.accept || '').includes('image'));
-    if (!target) target = allInputs.find(i => !(i.accept || '').includes('application')); // no docs
+    if (isImage) {
+      target = allInputs.find(i => (i.accept || '').includes('image'));
+      if (!target) target = allInputs.find(i => !(i.accept || '').includes('application'));
+    } else {
+      target = allInputs.find(i => !(i.accept || '').includes('image'));
+      if (!target && allInputs.length > 0) target = allInputs[0];
+    }
+
     if (!target && allInputs.length > 0) target = allInputs[0];
     if (!target) return false;
 
-    // Inyectar con método nativo del prototipo
     const dt = new DataTransfer();
     dt.items.add(file);
     try {
@@ -242,7 +259,7 @@ async function clickAttachAndInject(file) {
     target.dispatchEvent(new Event('change', { bubbles: true }));
     target.dispatchEvent(new InputEvent('input', { bubbles: true }));
     await sleep(1500);
-    return true; // asumimos éxito y dejamos que el flujo principal siga
+    return true;
   } catch (err) {
     console.error('[WA Bulk] clickAttachAndInject:', err.message);
     return false;
@@ -250,7 +267,6 @@ async function clickAttachAndInject(file) {
 }
 
 async function clickSend() {
-  // Buscar todos los botones de send posibles, incluyendo el del modal de imagen
   const selectors = [
     '[data-testid="send-button"]',
     'button[aria-label="Enviar"]',
@@ -259,7 +275,6 @@ async function clickSend() {
     '[data-icon="send"]',
   ];
   for (const sel of selectors) {
-    // Tomar el último (el del modal tiene prioridad sobre el del input)
     const btns = document.querySelectorAll(sel);
     if (btns.length > 0) {
       btns[btns.length - 1].click();
@@ -269,7 +284,6 @@ async function clickSend() {
   return false;
 }
 
-// Espera el primero de varios selectores que aparezca
 function waitForAnyElement(selectors, timeout = 5000) {
   return new Promise(resolve => {
     const combined = selectors.join(', ');
