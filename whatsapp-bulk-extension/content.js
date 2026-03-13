@@ -174,59 +174,74 @@ async function tryAttachImage(file) {
 }
 
 async function tryAttachFile(file) {
-  // Para documentos, intentar click directo en el botón de adjuntar
+  // Para documentos, intentar drag & drop primero (más confiable)
   try {
+    // Cerrar cualquier menú abierto
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
     await sleep(500);
 
+    // Intentar drag & drop del archivo
+    const dropZone = document.querySelector('#main, main, [data-testid="conversation-panel-wrapper"], div[role="dialog"]');
+    if (dropZone) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      
+      // Crear y dispatch eventos de drag
+      const dragEnter = new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: dt });
+      const dragOver = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt });
+      const drop = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt });
+      
+      dropZone.dispatchEvent(dragEnter);
+      await sleep(200);
+      dropZone.dispatchEvent(dragOver);
+      await sleep(200);
+      dropZone.dispatchEvent(drop);
+      await sleep(1500);
+      
+      // Verificar si apareció el modal de confirmación
+      const modal = document.querySelector('[data-testid="media-confirmation-window"], [data-testid="media-editor"], div[role="dialog"]');
+      if (modal) {
+        console.log('[WA Bulk] Document attached via drag & drop');
+        return true;
+      }
+    }
+
+    // Si drag & drop no funcionó, intentar click en adjuntar + documento
     const attachBtn = await waitForAnyElement([
       '[data-testid="attach-btn"]',
       'button[aria-label*="Adjuntar"]',
-      'button[aria-label*="Attach"]',
       'span[data-icon="plus"]',
-      '[data-icon="plus"]',
     ], 4000);
 
-    if (!attachBtn) return false;
+    if (!attachBtn) {
+      console.log('[WA Bulk] No attach button found');
+      return false;
+    }
+    
     attachBtn.click();
-    await sleep(1000);
+    await sleep(800);
 
-    // Buscar menú de opciones (documento, galería, etc.)
-    const menuItem = await waitForAnyElement([
+    // Buscar opción de documento en el menú
+    const docBtn = await waitForAnyElement([
       'li[data-testid="attach-item-document"]',
       'li[aria-label*="Documento"]',
       'li[aria-label*="Document"]',
-      '[data-testid="attach-menu"] li:nth-child(2)',
-    ], 3000);
+    ], 2000);
 
-    if (menuItem) {
-      menuItem.click();
-      await sleep(800);
+    if (docBtn) {
+      docBtn.click();
+      await sleep(1000);
+      
+      // Después de click en documento, WhatsApp abre un input file real
+      // No podemos controlarlo programáticamente, retornar false para indicar error
+      console.log('[WA Bulk] Clicked document, waiting for user...');
+      await sleep(2000);
+      return false;
     }
 
-    const allInputs = Array.from(document.querySelectorAll('input[type="file"]'));
-    // Para documentos, buscar input que acepte archivos
-    let target = allInputs.find(i => !(i.accept || '').includes('image'));
-    if (!target && allInputs.length > 0) target = allInputs[0];
-    if (!target) return false;
-
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    try {
-      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
-      descriptor.set.call(target, dt.files);
-    } catch {
-      Object.defineProperty(target, 'files', { value: dt.files, configurable: true, writable: true });
-    }
-    target.dispatchEvent(new Event('change', { bubbles: true }));
-    target.dispatchEvent(new InputEvent('input', { bubbles: true }));
-    
-    // Esperar a que aparezca el modal de confirmación
-    await sleep(2000);
-    const modal = document.querySelector('[data-testid="media-confirmation-window"], [data-testid="media-editor"]');
-    return !!modal;
+    return false;
   } catch (err) {
-    console.error('[WA Bulk] tryAttachFile:', err.message);
+    console.error('[WA Bulk] tryAttachFile error:', err.message);
     return false;
   }
 }
